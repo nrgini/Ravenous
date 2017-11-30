@@ -1,31 +1,47 @@
-import React from 'react';
-import './App.css';
-import BusinessList from './components/BusinessList/BusinessList';
-import Yelp from './util/Yelp';
-import SearchBar from './components/SearchBar/SearchBar';
+const clientId = 'qKaPQmAZq0XGUYRFQhHbqg';
+const secret = 'yUQmaWQOjC2qb3K2flvVzH2CqR093XVvPZlByjmRnVqJF54y0sAYoCEL7FF7ppV8';
+let accessToken = '';
+const Yelp = {
+    getAccessToken() {
+        if (accessToken) {
+        return new Promise(resolve => 
+            resolve(accessToken));
+        }
+        return fetch(`https://cors-anywhere.herokuapp.com/https://api.yelp.com/oauth2/token?grant_type=client_credentials&client_id=${clientId}&client_secret=${secret}`, {
+            method: 'POST',
+        }).then(response => {
+            return response.json();
+        }).then(jsonResponse => {
+            accessToken = jsonResponse.access_token;
+        });
+    },
 
-class App extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { businesses: [] };
-    this.searchYelp = this.searchYelp.bind(this);
-  }
-
-  searchYelp(term, location, sortBy) {
-    Yelp.search(term, location, sortBy).then(businesses => 
-      this.setState({ businesses: businesses })
-  );
-  }
-  render() {
-    return (
-      <div className="App">
-      <h1>ravenous</h1>
-      <SearchBar searchYelp={this.searchYelp} />
-      <BusinessList businesses={this.state.businesses} />
-    </div>
-    );
-  }
-}
-
-export default App;
+    search(term, location, sortBy) {
+        return Yelp.getAccessToken().then(() => {
+           return fetch(`https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search?term=${term}&location=${location}&sort_by=${sortBy}`, {
+               headers: { Authorization: `Bearer ${accessToken}`
+            }
+            });
+        }).then(response => {
+            return response.json();
+        }).then(jsonResponse => {
+            if (jsonResponse.businesses) {
+                return jsonResponse.businesses.map(business => ({
+                    id: business.id,
+                    imageSrc: business.image_url,
+                    name: business.name,
+                    address: business.location.address1,
+                    city: business.location.city,
+                    state: business.location.state,
+                    zipCode: business.location.zip_code,
+                    category: business.categories[0].title,
+                    rating: business.rating,
+                    reviewCount: business.review_count
+                }));
+            };
+        })     
+    }
+};                
+               
+export default Yelp;
 
