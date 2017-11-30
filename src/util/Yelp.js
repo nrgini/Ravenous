@@ -12,7 +12,7 @@ const Yelp = {
         }).then(response => {
             return response.json();
         }).then(jsonResponse => {
-            accessToken === jsonResponse.access_token;
+            accessToken = jsonResponse.access_token;
         });
     },
 
